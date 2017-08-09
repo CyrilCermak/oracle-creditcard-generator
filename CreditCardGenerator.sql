@@ -1,34 +1,37 @@
 set serveroutput on;
 
-create Table Customers (
-	firstName varchar2(15) not null,
-	lastName varchar2(20) not null,
-	address varchar2(100) not null,
-	creditCard number(11) not null,
-  CONSTRAINT customer_id PRIMARY KEY (creditCard)
-)
-
 CREATE OR REPLACE PACKAGE creditCardGenerator AS
-   FUNCTION startGenerating RETURN integer;
+   FUNCTION createCreditCard(cardType in number) RETURN integer;
    PROCEDURE splitNumberIntoArray(n in number);
    PROCEDURE varcharToArray(text in varchar2);
    PROCEDURE iterateThroughArray;
    PROCEDURE generateCard;
    randomNumber number;
-   type numbersArrayType is varray(17) of integer;
+   type numbersArrayType is varray(16) of integer;
    numbersArray numbersArrayType;
    creditCardNumber integer := 0;
 END creditCardGenerator;
 
 CREATE OR REPLACE PACKAGE BODY creditCardGenerator AS
 
-  function startGenerating return integer is 
-    begin 
-    SELECT dbms_random.value(1000000000000000,9999999999999) num into randomNumber FROM dual;
+  function createCreditCard(cardType in number) return integer is 
+    begin    
+    case cardType 
+     when 1 then -- MasterCard
+        SELECT dbms_random.value(520000000000000,529999999999999) num into randomNumber FROM dual;
+     when 2 then -- Visa
+        SELECT dbms_random.value(453900000000000,453999999999999) num into randomNumber FROM dual;
+     when 3 then -- Discovery
+        SELECT dbms_random.value(601100000000000,601199999999999) num into randomNumber FROM dual;
+     when 4 then -- American Express
+        SELECT dbms_random.value(340000000000000,349999999999999) num into randomNumber FROM dual;
+    else 
+        SELECT dbms_random.value(100000000000000,999999999999999) num into randomNumber FROM dual;
+      end case;
       splitNumberIntoArray(round(randomNumber));
       generateCard;
       return creditCardNumber;
-    end startGenerating;
+    end createCreditCard;
 
   procedure splitNumberIntoArray(n in number) is 
     begin
@@ -58,7 +61,7 @@ CREATE OR REPLACE PACKAGE BODY creditCardGenerator AS
      sumOfAll integer := 0;
      numInt integer;
      checkDigit integer;
-     creditCardString varchar(16);
+     creditCardString varchar(17);
     begin 
       for i in 1..numbersArray.count loop 
         numInt := numbersArray(i);
@@ -74,76 +77,13 @@ CREATE OR REPLACE PACKAGE BODY creditCardGenerator AS
         end if;
       end loop;
      checkDigit := mod(sumOfAll*9, 10);
-    numbersArray.extend();
-    numbersArray(16) := checkDigit;     
-    creditCardString := '';
+     creditCardString := '';
      FOR i in 1 .. numbersArray.count LOOP
-          creditCardString := creditCardString || to_char(numbersArray(i));
+          creditCardString := creditCardString || numbersArray(i);
      END LOOP;
-     creditCardNumber := to_number(creditCardString);
+      creditCardString := creditCardString || to_char(checkDigit);
+      creditCardNumber := to_number(creditCardString);
   end;
     
 end creditCardGenerator;
 
-
-
-
-CREATE OR REPLACE PROCEDURE data_generator (limit_number IN PLS_INTEGER DEFAULT 100) IS
-    CURSOR tableCursor IS
-    select first_name, last_name
-    from fullname_table;
-    
-    first_name fullname_table.first_name%type;
-    last_name fullname_table.last_name%type;
-    creditCard integer := 0;
-    fetchedRecords integer := 0;
-BEGIN   
-   OPEN tableCursor;
-  
-  LOOP
-    FETCH tableCursor INTO first_name, last_name; 
-    fetchedRecords := fetchedRecords + 1;
-    EXIT WHEN tableCursor%NOTFOUND;
-    EXIT WHEN fetchedRecords = limit_number;
-    creditCard := creditCardGenerator.startGenerating;
-    dbms_output.put_line('Jmeno: ' || last_name || ' ' || first_name || ' Card ' || creditCard);
-  END LOOP;
-
-  -- kurzor je vhodne i zavrit
-  CLOSE tableCursor;
-END data_generator;
-
-
-
-
-
-
-
-
-declare
-
-begin
-data_generator(10);
-end;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-declare 
- creditCard integer := 0;
-begin 
- creditCard := creditCardGenerator.startGenerating;
- dbms_output.put_line('Card ' || creditCard);
-end;
-/

@@ -1,0 +1,5 @@
+READ ME
+
+1. open tables.sql and create all the tables
+2. import NamesWithAddresses.csv into fakedata table
+3. open startScript.sql and read the instructions there to generate creditcards
